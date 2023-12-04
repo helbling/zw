@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+
+"""zw - a zbarimg wrapper for CTFs - scans qr codes even without border and also if only given as a file with two types of bytes apart from whitespace
+"""
+
+import os
+import sys
+import subprocess
+import argparse
+from math import sqrt,floor
+
+def scan_and_exit_if_successful(data):
+    out, err = subprocess.Popen(
+        "magick - -bordercolor white -border 5 png:- | zbarimg -q - | sed -e 's/^QR-Code://'",
+        shell=True,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL
+    ).communicate(input=data)
+    if (out):
+        sys.stdout.buffer.write(out)
+        sys.exit()
+
+def main(arguments):
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('--dummy', help='dummy argument')
+    parser.add_argument('file', metavar='FILE', nargs='?', help='file to read, if empty, stdin is used')
+    args = parser.parse_args()
+
+
+    f = open(args.file, "rb") if args.file else sys.stdin.buffer
+    data = f.read()
+    # out, err = subprocess.Popen(
+    #     "magick - -bordercolor white -border 5 png:- | zbarimg -q -",
+    #     shell=True,
+    #     stdin=subprocess.PIPE,
+    #     stdout=subprocess.PIPE,
+    #     stderr=subprocess.DEVNULL
+    # ).communicate(input=data)
+    # out = scan(data)
+    # if (out):
+    #     sys.stdout.buffer.write(out)
+    #     sys.exit()
+    scan_and_exit_if_successful(data)
+
+    count = {}
+    for b in data:
+        if chr(b).isspace():
+            continue
+        count.setdefault(b, 0)
+        count[b]+=1;
+
+    count = sorted(count.items(), key=lambda x:x[1], reverse=True);
+    if len(count) < 2:
+        sys.exit(1)
+    total = count[0][1] + count[1][1]
+    w = floor(sqrt(total));
+    h = floor(total / w)
+
+    first  = count[0][0]
+    second = count[1][0]
+
+    for i in range(2):
+        pbm = "P1 " + str(w) + " " + str(h);
+        for b in data:
+            if b == first:
+                pbm += " 1"
+            elif b == second:
+                pbm += " 0"
+        scan_and_exit_if_successful(bytes(pbm, 'ascii'))
+        first,second=second,first
+
+    sys.exit(1)
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))
