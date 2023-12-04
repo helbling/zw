@@ -25,24 +25,11 @@ def main(arguments):
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--dummy', help='dummy argument')
     parser.add_argument('file', metavar='FILE', nargs='?', help='file to read, if empty, stdin is used')
     args = parser.parse_args()
 
-
     f = open(args.file, "rb") if args.file else sys.stdin.buffer
     data = f.read()
-    # out, err = subprocess.Popen(
-    #     "magick - -bordercolor white -border 5 png:- | zbarimg -q -",
-    #     shell=True,
-    #     stdin=subprocess.PIPE,
-    #     stdout=subprocess.PIPE,
-    #     stderr=subprocess.DEVNULL
-    # ).communicate(input=data)
-    # out = scan(data)
-    # if (out):
-    #     sys.stdout.buffer.write(out)
-    #     sys.exit()
     scan_and_exit_if_successful(data)
 
     count = {}
